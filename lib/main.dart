@@ -125,8 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _watchAccelerometer.put(event.x, event.y, event.z);
         if (_watchAccelerometer.got90deg()) {
           final eventLatency = DateTime.now().difference(_watchAccelerometer.last90DegAt);
-          const APPROX_PAST_DURATION = Duration(milliseconds: 900);
-          _stateMachine.on90Deg(eventLatency + APPROX_PAST_DURATION);
+          _stateMachine.on90Deg(eventLatency);
         }
       });
     }));

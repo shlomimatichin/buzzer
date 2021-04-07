@@ -28,48 +28,67 @@ const double deg0error = pi * 15 / 180;
 const double deg90min = pi * 75 / 180;
 
 class WatchAccelerometer {
-  static const MAX_EVENTS = 10;
-  static const STABILITY = 3;
-  Queue<MyAccelerometerEvent> events = Queue();
+  static const STABLE_EVENTS = 4;
+  static const HISTORY = 40;
+  Queue<MyAccelerometerEvent> _history = Queue();
+  Vector3 _comitted;
+  bool _isCommited = false;
   DateTime last90DegAt;
 
   void put(double x, double y, double z) {
-    events.addLast(MyAccelerometerEvent(x, y, z, DateTime.now()));
-    while (events.length > MAX_EVENTS) {
-      events.removeFirst();
+    _history.addLast(MyAccelerometerEvent(x, y, z, DateTime.now()));
+    while (_history.length > HISTORY) {
+      _history.removeFirst();
     }
+  }
+  
+  bool _isStable() { //is last STABLE_EVENTS within a deg0error cone
+    final last = _history.last;
+    bool isStable = true;
+    for (int i = 2; i <= STABLE_EVENTS; i++) {
+      if (_history.elementAt(_history.length - i).angle(last) > deg0error) {
+        isStable = false;
+      }
+    }
+    return isStable;
+  }
+  
+  Vector3 _stableAverage() { //just sum the stables, as length doesn't matter
+    Vector3 result = Vector3(0, 0, 0);
+    for (int i = 1; i <= STABLE_EVENTS; i++) {
+      final part = _history.elementAt(_history.length - i);
+      result += part.vector;
+    }
+    return result;
   }
 
   bool got90deg() {
-    if (events.length < MAX_EVENTS) {
+    if (_history.length < STABLE_EVENTS) {
       return false;
     }
-    final first = events.first;
-    final last = events.last;
-    // debugPrint('angle ${first.angle(last)} ${DateTime.now()}');
-    if (first.angle(last) < deg90min) {
+    if (!_isStable()) {
       return false;
     }
-    int unstableStart = 0;
-    int unstableEnd = 0;
-    DateTime when;
-    for (int i = 1; i < STABILITY; i++) {
-      final start = events.elementAt(i);
-      if (start.angle(first) > deg0error) {
-        unstableStart += 1;
+    final average = _stableAverage();
+    if (!_isCommited) {
+      _isCommited = true;
+      _comitted = average;
+      return false;
+    }
+    if (average.angleTo(_comitted) < deg90min) {
+      return false;
+    }
+
+    this.last90DegAt = _history.first.when;
+    for (int i = 1; i <= _history.length; i++) {
+      final element = _history.elementAt(_history.length - i);
+      if (element.vector.angleTo(_comitted) < deg0error) {
+        this.last90DegAt = element.when;
+        break;
       }
-      final end = events.elementAt(MAX_EVENTS - 1 - i);
-      if (end.angle(last) > deg0error) {
-        unstableEnd += 1;
-      } else {
-        when = end.when;
-      }
     }
-    if (unstableEnd > 1 || unstableStart > 1) {
-      return false;
-    }
-    this.events.clear();
-    this.last90DegAt = when;
+    _isCommited = false;
+    _history.clear();
     return true;
   }
 }
