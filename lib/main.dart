@@ -58,6 +58,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _milliseconds = 0;
+  int _events = 0;
+  bool _isCommitted = false;
   WatchAccelerometer _watchAccelerometer = WatchAccelerometer();
   BuzzerStateMachine _stateMachine = BuzzerStateMachine();
   List<StreamSubscription<dynamic>> _streamSubscriptions =
@@ -127,6 +129,8 @@ class _MyHomePageState extends State<MyHomePage> {
           final eventLatency = DateTime.now().difference(_watchAccelerometer.last90DegAt);
           _stateMachine.on90Deg(eventLatency);
         }
+        _isCommitted = _watchAccelerometer.isCommitted();
+        _events += 1;
       });
     }));
   }
@@ -185,11 +189,11 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Text(
-            //   '${_milliseconds / 1000.0}'
-            //   // _accelerometerValues.length > 0 ? (
-            //   // '$_accelerometerValues') : ("No data")
-            // ),
+            Text(
+              '$_events ${_isCommitted ? "Y" : "N"}',
+              // _accelerometerValues.length > 0 ? (
+              // '$_accelerometerValues') : ("No data")
+            ),
             Text(
               '${(_milliseconds / 1000.0).toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.headline4,

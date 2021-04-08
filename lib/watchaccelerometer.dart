@@ -35,6 +35,10 @@ class WatchAccelerometer {
   bool _isCommited = false;
   DateTime last90DegAt;
 
+  bool isCommitted() {
+    return _isCommited;
+  }
+
   void put(double x, double y, double z) {
     _history.addLast(MyAccelerometerEvent(x, y, z, DateTime.now()));
     while (_history.length > HISTORY) {
